@@ -51,3 +51,5 @@ Part number:
 1K0035186AA HW: H14, SW: 5043
 PIN: 0384
 ```
+
+- You can also directly power the EEPROM chip with 3V. This might be needed to isolate the chip from the radio.
