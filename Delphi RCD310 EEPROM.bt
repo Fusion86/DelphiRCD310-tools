@@ -11,13 +11,9 @@
 //   History: 
 //------------------------------------------------
 
-struct BLOCK {
-    byte data[0xA0];
-    byte code_bytes[4];
-    byte the_rest[0x1000 - 0xA0 - 4];
-};
+struct DELPHI_RCD310_EEPROM;
 
-string RecordComment(BLOCK &r)
+string RecordComment(DELPHI_RCD310_EEPROM &r)
 {
     local int i = 0;
     local byte bs[4];
@@ -30,10 +26,38 @@ string RecordComment(BLOCK &r)
     return "Code: " + bs;
 }
 
-struct {
+struct DELPHI_RCD310_EEPROM {
     //BLOCK block[8] <comment=RecordComment>;
-    BLOCK block <comment=RecordComment>;
-} delphi_rcd310_eeprom <open=true>;
+    //BLOCK block <comment=RecordComment>;
+    byte data[0xA0];
+    byte code_bytes[4];
+    byte unk1;
+    
+    // Weboctopus resets the error counter by setting this to 07 35
+    // https://www.weboctopus.nl/rcd310-rcd510-navi-radio-code-calculator.php?radio_algo=rcd310_old#calculator
+  
+    // Values I have seen:
+    // 0x07 36 = 0
+    // 0xFF FF = 1
+    // 0x07 35 = 1
+    // 0x07 35 = 2
+    short checksum1;
+    // Or checksum?
+    
+    byte unk3[2];
+    char sw_ver[4];
+    char unk_or_sw_ver[11];
+    char unk2[73 - 2 - 4 - 11];
+    char name_and_hw_ver[0x10];
+    byte unk4[588];
+    byte unk5;
+    byte zero6;
+    byte error_counter_2_maybe;
+    byte unk0x63;
+    uint checksum2;
+    
+    byte the_rest[3244];
+} delphi_rcd310_eeprom <open=true, comment=RecordComment>;
 
 
 //local int off = 0;
