@@ -3,3 +3,4 @@
 *.bin
 *.pvs
 *.sr
+*.py[co]
