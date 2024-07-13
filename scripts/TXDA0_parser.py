@@ -26,7 +26,7 @@ class EventId(IntEnum):
 
 
 class KeyId(IntEnum):
-    BTN_POWER_KNOW = 1
+    BTN_POWER_KNOB = 1
     BTN_EJECT = 2
     BTN_RIGHT_KNOB = 3
     BTN_TP = 5
