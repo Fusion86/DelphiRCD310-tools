@@ -1,0 +1,20 @@
+//------------------------------------------------
+//--- 010 Editor v14.0.1 Binary Template
+//
+//      File: 
+//   Authors: 
+//   Version: 
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+struct LINE {
+    byte data[315];
+};
+
+struct {
+    LINE d[8];
+} display_data <open=true>;

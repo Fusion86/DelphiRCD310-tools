@@ -54,8 +54,6 @@ VALID_MODULES = [
     "Keyboard",
     "BAP MDI",
     "Customer Diagnostics",
-    "Audio",
-    "BAP",
 ]
 
 LINE_PARSER = (

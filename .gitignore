@@ -1,6 +1,10 @@
 .vscode/
+build/
 *.txt
 *.bin
 *.pvs
 *.sr
 *.py[co]
+*.data
+*.txt
+*.png
