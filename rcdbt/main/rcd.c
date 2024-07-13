@@ -62,32 +62,32 @@ const char *keyboard_btn_to_string(keyboard_btn btn)
     case BTN_MENU:
         return "BTN_MENU";
     default:
-        return "<invalid>";
+        return "<unknown>";
     }
 }
 
 bool is_valid_keyboard_input(int evt, int btn)
 {
     bool valid_evt = evt == KEY_DOWN || evt == KEY_HELD_SHORT || evt == KEY_HELD_REPEAT || evt == KEY_UP;
-    bool valid_key =
-        btn == BTN_POWER_KNOB ||
-        btn == BTN_EJECT ||
-        btn == BTN_RIGHT_KNOB ||
-        btn == BTN_TP ||
-        btn == BTN_1 ||
-        btn == BTN_2 ||
-        btn == BTN_3 ||
-        btn == BTN_4 ||
-        btn == BTN_5 ||
-        btn == BTN_6 ||
-        btn == BTN_AUDIO ||
-        btn == BTN_RADIO ||
-        btn == BTN_TRACK_PREV ||
-        btn == BTN_TRACK_NEXT ||
-        btn == BTN_SOUND ||
-        btn == BTN_FOLDER_PREV ||
-        btn == BTN_FOLDER_NEXT ||
-        btn == BTN_MENU;
+    // bool valid_key =
+    //     btn == BTN_POWER_KNOB ||
+    //     btn == BTN_EJECT ||
+    //     btn == BTN_RIGHT_KNOB ||
+    //     btn == BTN_TP ||
+    //     btn == BTN_1 ||
+    //     btn == BTN_2 ||
+    //     btn == BTN_3 ||
+    //     btn == BTN_4 ||
+    //     btn == BTN_5 ||
+    //     btn == BTN_6 ||
+    //     btn == BTN_AUDIO ||
+    //     btn == BTN_RADIO ||
+    //     btn == BTN_TRACK_PREV ||
+    //     btn == BTN_TRACK_NEXT ||
+    //     btn == BTN_SOUND ||
+    //     btn == BTN_FOLDER_PREV ||
+    //     btn == BTN_FOLDER_NEXT ||
+    //     btn == BTN_MENU;
 
-    return valid_evt && valid_key;
+    return valid_evt;
 }
