@@ -32,7 +32,10 @@
 #define RD_BUF_SIZE (BUF_SIZE)
 
 static const char *TAG = "RCDBT";
+
 static QueueHandle_t uart0_queue;
+static bool is_volume_on = false;
+static int current_audio_source = 0;
 
 typedef struct
 {
@@ -199,48 +202,48 @@ void esp_hidd_send_consumer_value(uint8_t key_cmd, bool key_pressed)
     return;
 }
 
-void ble_hid_demo_task(void *pvParameters)
-{
-    static bool send_volum_up = false;
-    while (1)
-    {
-        ESP_LOGI(TAG, "Send the volume");
-        if (send_volum_up)
-        {
-            esp_hidd_send_consumer_value(HID_CONSUMER_VOLUME_UP, true);
-            vTaskDelay(100 / portTICK_PERIOD_MS);
-            esp_hidd_send_consumer_value(HID_CONSUMER_VOLUME_UP, false);
-        }
-        else
-        {
-            esp_hidd_send_consumer_value(HID_CONSUMER_VOLUME_DOWN, true);
-            vTaskDelay(100 / portTICK_PERIOD_MS);
-            esp_hidd_send_consumer_value(HID_CONSUMER_VOLUME_DOWN, false);
-        }
-        send_volum_up = !send_volum_up;
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-    }
-}
+// void ble_hid_demo_task(void *pvParameters)
+// {
+//     static bool send_volum_up = false;
+//     while (1)
+//     {
+//         ESP_LOGI(TAG, "Send the volume");
+//         if (send_volum_up)
+//         {
+//             esp_hidd_send_consumer_value(HID_CONSUMER_VOLUME_UP, true);
+//             vTaskDelay(100 / portTICK_PERIOD_MS);
+//             esp_hidd_send_consumer_value(HID_CONSUMER_VOLUME_UP, false);
+//         }
+//         else
+//         {
+//             esp_hidd_send_consumer_value(HID_CONSUMER_VOLUME_DOWN, true);
+//             vTaskDelay(100 / portTICK_PERIOD_MS);
+//             esp_hidd_send_consumer_value(HID_CONSUMER_VOLUME_DOWN, false);
+//         }
+//         send_volum_up = !send_volum_up;
+//         vTaskDelay(2000 / portTICK_PERIOD_MS);
+//     }
+// }
 
 void ble_hid_task_start_up(void)
 {
-    if (s_ble_hid_param.task_hdl)
-    {
-        // Task already exists
-        return;
-    }
-    /* Executed for bluedroid */
-    xTaskCreate(ble_hid_demo_task, "ble_hid_demo_task", 2 * 1024, NULL, configMAX_PRIORITIES - 3,
-                &s_ble_hid_param.task_hdl);
+    //     if (s_ble_hid_param.task_hdl)
+    //     {
+    //         // Task already exists
+    //         return;
+    //     }
+    //     /* Executed for bluedroid */
+    //     xTaskCreate(ble_hid_demo_task, "ble_hid_demo_task", 2 * 1024, NULL, configMAX_PRIORITIES - 3,
+    //                 &s_ble_hid_param.task_hdl);
 }
 
 void ble_hid_task_shut_down(void)
 {
-    if (s_ble_hid_param.task_hdl)
-    {
-        vTaskDelete(s_ble_hid_param.task_hdl);
-        s_ble_hid_param.task_hdl = NULL;
-    }
+    //     if (s_ble_hid_param.task_hdl)
+    //     {
+    //         vTaskDelete(s_ble_hid_param.task_hdl);
+    //         s_ble_hid_param.task_hdl = NULL;
+    //     }
 }
 
 static void ble_hidd_event_callback(void *handler_args, esp_event_base_t base, int32_t id, void *event_data)
@@ -273,12 +276,12 @@ static void ble_hidd_event_callback(void *handler_args, esp_event_base_t base, i
         if (param->control.control)
         {
             // exit suspend
-            ble_hid_task_start_up();
+            // ble_hid_task_start_up();
         }
         else
         {
             // suspend
-            ble_hid_task_shut_down();
+            // ble_hid_task_shut_down();
         }
         break;
     }
@@ -297,7 +300,7 @@ static void ble_hidd_event_callback(void *handler_args, esp_event_base_t base, i
     case ESP_HIDD_DISCONNECT_EVENT:
     {
         ESP_LOGI(TAG, "DISCONNECT: %s", esp_hid_disconnect_reason_str(esp_hidd_dev_transport_get(param->disconnect.dev), param->disconnect.reason));
-        ble_hid_task_shut_down();
+        // ble_hid_task_shut_down();
         esp_hid_ble_gap_adv_start();
         break;
     }
@@ -312,7 +315,7 @@ static void ble_hidd_event_callback(void *handler_args, esp_event_base_t base, i
     return;
 }
 
-void shitty_parser(const char *data, int len)
+void uart_log_handler(const char *data, int len)
 {
     // Looks like we don't have sscanf_s, so a shitty workaround.
     if (len < 32)
@@ -323,11 +326,50 @@ void shitty_parser(const char *data, int len)
     int ts, id, param;
     int res = sscanf(data, "%d INFO M ID: 0x%x P: 0x%x", &ts, &id, &param);
 
-    // We don't parse the module name, so we just use `is_valid_keyboard_input()` to check whether the values are valid.
+    // We don't parse the module name, so we just use `is_keyboard_event()` to check whether the values are valid.
     // Not sure if this is faster.
-    if (res == 3 && is_valid_keyboard_input(id, param))
+    if (res == 3)
     {
-        ESP_LOGE(TAG, "Got event! ID: %s, P: %s\n", keyboard_event_to_string(id), keyboard_btn_to_string(param));
+        if (is_keyboard_event(id, param))
+        {
+            ESP_LOGE(TAG, "Got key! ID: %s, P: %s", rcd_event_to_string(id), keyboard_btn_to_string(param));
+
+            // Only handle events when AUX is the current audio source.
+            if (current_audio_source == SRC_AUX && is_volume_on && id == EVT_KEY_DOWN)
+            {
+                // This could be sent to a queue and then handled in a different thread. But that is probably not needed?
+                switch (param)
+                {
+                case BTN_TRACK_NEXT:
+                    ESP_LOGE(TAG, "Sending event: HID_CONSUMER_SCAN_NEXT_TRK");
+                    esp_hidd_send_consumer_value(HID_CONSUMER_SCAN_NEXT_TRK, true);
+                    vTaskDelay(100 / portTICK_PERIOD_MS);
+                    esp_hidd_send_consumer_value(HID_CONSUMER_SCAN_NEXT_TRK, false);
+                    break;
+                case BTN_TRACK_PREV:
+                    ESP_LOGE(TAG, "Sending event: HID_CONSUMER_SCAN_PREV_TRK");
+                    esp_hidd_send_consumer_value(HID_CONSUMER_SCAN_PREV_TRK, true);
+                    vTaskDelay(100 / portTICK_PERIOD_MS);
+                    esp_hidd_send_consumer_value(HID_CONSUMER_SCAN_PREV_TRK, false);
+                    break;
+                }
+            }
+        }
+        else if (id == EVT_SWITCH_MEDIA_SRC)
+        {
+            current_audio_source = param & 0b1111;
+            is_volume_on = (param & SRC_SOUND_ON) >> 16;
+
+            ESP_LOGE(TAG, "current_audio_source: %i, is_volume_on: %i", current_audio_source, is_volume_on);
+        }
+        else
+        {
+            ESP_LOGW(TAG, "Got event! ID: %s, P: 0x%x", rcd_event_to_string(id), param);
+        }
+    }
+    else
+    {
+        ESP_LOGW(TAG, "sscanf_result != 3");
     }
 }
 
@@ -411,7 +453,7 @@ static void uart_event_task(void *pvParameters)
                     dtmp[read_len] = '\0';
 
                     ESP_LOGI(TAG, "read data: %s", dtmp);
-                    shitty_parser((const char *)dtmp, read_len);
+                    uart_log_handler((const char *)dtmp, read_len);
                 }
                 break;
             // Others
@@ -446,6 +488,8 @@ void app_main(void)
     uart_set_pin(EX_UART_NUM, 5, 4, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
     // Set uart pattern detect function.
+    // The RCD doesn't cleanly flush its contents (or maybe it uses RTS/CTS, idk how that works).
+    // This means that the last line is usually not detected. This is usually the EVT_KEY_UP event, so that doesn't matter too much.
     uart_enable_pattern_det_baud_intr(EX_UART_NUM, '\n', PATTERN_CHR_NUM, 9, 0, 0);
     // Reset the pattern queue length to record at most 20 pattern positions.
     uart_pattern_queue_reset(EX_UART_NUM, 20);
