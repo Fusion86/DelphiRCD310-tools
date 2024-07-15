@@ -18,7 +18,7 @@ string RecordComment(DELPHI_RCD310_EEPROM &r)
     local int i = 0;
     local byte bs[4];
     for (i; i < 4; i++) {
-        // The +48 is to convert it to a ASCII string.
+        // The +48 is to convert it to an ASCII string.
         bs[i] = (r.code_bytes[i] ^ 0x65) + 48;
     }
     //local string s;
